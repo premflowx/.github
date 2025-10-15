@@ -19,27 +19,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect Node project
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "has_node=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_node=false" >> $GITHUB_OUTPUT
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.detect.outputs.has_node == 'true'
         with:
           node-version: ${{ inputs.node-version }}
           cache: 'npm'
 
       - name: Install
+        if: steps.detect.outputs.has_node == 'true'
         run: npm ci || npm i
 
       - name: Lint
+        if: steps.detect.outputs.has_node == 'true'
         run: npm run lint --if-present
 
       - name: Test
-        if: ${{ inputs.run-tests }}
+        if: steps.detect.outputs.has_node == 'true' && inputs.run-tests
         run: npm test --if-present
 
       - name: Build
-        if: ${{ inputs.run-build }}
+        if: steps.detect.outputs.has_node == 'true' && inputs.run-build
         run: npm run build --if-present
 
       - name: Upload artifact
-        if: ${{ inputs.run-build }}
+        if: steps.detect.outputs.has_node == 'true' && inputs.run-build
         uses: actions/upload-artifact@v4
         with:
           name: build
